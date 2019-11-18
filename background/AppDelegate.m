@@ -64,7 +64,22 @@
 - (void)applicationDidEnterBackground:(UIApplication *)application {
     // Use this method to release shared resources, save user data, invalidate timers, and store enough application state information to restore your application to its current state in case it is terminated later.
     // If your application supports background execution, this method is called instead of applicationWillTerminate: when the user quits.
-
+    
+    UIApplication*    app = [UIApplication sharedApplication];
+    
+    self->bgTaskIdentifier = [app beginBackgroundTaskWithExpirationHandler:^{
+        // Synchronize the cleanup call on the main thread in case
+        // the task actually finishes at around the same time.
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (self->bgTaskIdentifier != UIBackgroundTaskInvalid)
+            {
+                [app endBackgroundTask:self->bgTaskIdentifier];
+                self->bgTaskIdentifier = UIBackgroundTaskInvalid;
+            }
+        });
+        
+    }];
+    
     if (@available(iOS 13.0, *)) {
         BGTaskManager *bgTask = [ BGTaskManager shared ];
 
@@ -118,14 +133,7 @@
                  }
              }];
     
-//    NSDictionary *userInfo = notification.userInfo;
-//    if (@available(iOS 13.0, *)) {
-//        BGAppRefreshTask *task = [userInfo objectForKey:@"task" ];
-//        BGTaskManager *bgTask = [ BGTaskManager shared ];
-//        [ bgTask taskCompletedWithTask:task ];
-//    } else {
-//        // Fallback on earlier versions
-//    }
+
 }
  
 - (void)userNotificationCenter:(UNUserNotificationCenter *)center
